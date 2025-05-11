@@ -1,0 +1,46 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.diffplug.spotless' version '6.25.0'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+spotless {
+    java {
+        googleJavaFormat()
+    }
+}
+
+group = 'org.crawler'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("org.jsoup:jsoup:1.20.1")
+    implementation("com.google.code.gson:gson:2.13.1")
+    implementation("redis.clients:jedis:6.0.0")
+    implementation("ch.qos.logback:logback-classic:1.5.18")
+    implementation("org.slf4j:log4j-over-slf4j:2.0.17")
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+application {
+    mainClass = 'org.crawler.Main'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': application.mainClass.get()
+        )
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
