@@ -43,4 +43,17 @@ public class VisitedUrlsSetImpl implements VisitedUrlsSet {
       throw new RedisException(message, e);
     }
   }
+
+  @Override
+  public boolean isPresent(String url) {
+    try (Jedis jedis = jedisPool.getResource()) {
+
+      return jedis.sismember(VISITED_URLS_KEY, url);
+    } catch (Exception e) {
+      var message = "Failed to add url to visited set";
+
+      logger.error(message, e);
+      throw new RedisException(message, e);
+    }
+  }
 }

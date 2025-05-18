@@ -61,7 +61,8 @@ public class WorkersManager {
 
     for (int i = 0; i < numberOfLinksExtractorWorker; i++) {
       LinksExtractorWorker worker =
-          new LinksExtractorWorker(frontierQueue, fetchedPagesQueue, urlPredicate, maxDepth);
+          new LinksExtractorWorker(
+              frontierQueue, fetchedPagesQueue, visitedUrlsSet, urlPredicate, maxDepth);
       linksExtractorWorkers.add(worker);
       executorService.execute(worker);
     }

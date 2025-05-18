@@ -24,11 +24,12 @@ public class Main {
 
   public static void main(String[] args) {
     var numberOfCores = numberOfCores();
-    var numberOfPageFetcherWorkers = numberOfCores * 2;
-    var numberOfLinksExtractorWorker = numberOfCores * 2;
+    var numberOfPageFetcherWorkers = Math.ceilDiv(numberOfCores, 2);
+    var numberOfLinksExtractorWorker = Math.ceilDiv(numberOfCores, 2);
 
     ExecutorService executorService = null;
     JedisPool jedisPool = null;
+    WorkersManager workersManager = null;
 
     try {
       executorService = Executors.newVirtualThreadPerTaskExecutor();
@@ -36,7 +37,7 @@ public class Main {
 
       ConfigLoader configLoader = new ConfigLoaderImpl();
       AppConfig config = configLoader.load("config.properties");
-      WorkersManager workersManager =
+      workersManager =
           makeWorkersManager(
               executorService,
               jedisPool,
@@ -62,15 +63,7 @@ public class Main {
     } catch (Exception e) {
       logger.error("Fatal error during startup: {}", e.getMessage(), e);
     } finally {
-      shutdown(executorService);
-
-      if (jedisPool != null) {
-        try {
-          jedisPool.close();
-        } catch (Exception e) {
-          logger.error("Failed to close JedisPool: {}", e.getMessage(), e);
-        }
-      }
+      shutdown(workersManager, executorService, jedisPool);
     }
   }
 
@@ -122,17 +115,24 @@ public class Main {
                 () -> {
                   logger.info("Shutting down...");
 
-                  workersManager.shutdown();
-
-                  if (jedisPool != null) {
-                    jedisPool.close();
-                  }
-
-                  shutdown(executorService);
+                  shutdown(workersManager, executorService, jedisPool);
                 }));
   }
 
-  private static void shutdown(ExecutorService executorService) {
+  private static void shutdown(
+      WorkersManager workersManager, ExecutorService executorService, JedisPool jedisPool) {
+    if (workersManager != null) {
+      workersManager.shutdown();
+    }
+
+    if (jedisPool != null) {
+      try {
+        jedisPool.close();
+      } catch (Exception e) {
+        logger.error("Failed to close JedisPool: {}", e.getMessage(), e);
+      }
+    }
+
     if (executorService != null) {
       executorService.shutdown();
 

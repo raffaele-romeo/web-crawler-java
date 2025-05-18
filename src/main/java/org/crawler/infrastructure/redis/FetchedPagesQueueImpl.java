@@ -50,6 +50,7 @@ public class FetchedPagesQueueImpl implements FetchedPagesQueue {
     }
   }
 
+  @Override
   public void clear() {
     try (Jedis jedis = jedisPool.getResource()) {
       jedis.del(PARSING_QUEUE_KEY);
