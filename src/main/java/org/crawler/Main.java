@@ -12,6 +12,8 @@ import org.crawler.infrastructure.*;
 import org.crawler.infrastructure.redis.FetchedPagesQueueImpl;
 import org.crawler.infrastructure.redis.FrontierQueueImpl;
 import org.crawler.infrastructure.redis.VisitedUrlsSetImpl;
+import org.crawler.service.RobotsChecker;
+import org.crawler.service.RobotsCheckerImpl;
 import org.crawler.service.WorkersManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +84,7 @@ public class Main {
     FetchedPagesQueue fetchedPagesQueue =
         new FetchedPagesQueueImpl(jedisPool, config.redis().timeout());
     VisitedUrlsSet visitedUrlsSet = new VisitedUrlsSetImpl(jedisPool);
+    RobotsChecker robotsChecker = new RobotsCheckerImpl();
 
     URLPredicate urlPredicate = new URLPredicateImpl();
 
@@ -92,11 +95,15 @@ public class Main {
             visitedUrlsSet,
             executorService,
             urlPredicate,
+            robotsChecker,
             config.maxDepth(),
             numberOfPageFetcherWorkers,
             numberOfLinksExtractorWorker);
 
     visitedUrlsSet.clear();
+    frontierQueue.clear();
+    fetchedPagesQueue.clear();
+
     frontierQueue.push(config.seedLink());
 
     return workersManger;

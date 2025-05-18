@@ -52,4 +52,16 @@ public class FrontierQueueImpl implements FrontierQueue {
       throw new RedisException(message, e);
     }
   }
+
+  @Override
+  public void clear() {
+    try (Jedis jedis = jedisPool.getResource()) {
+      jedis.del(FRONTIER_QUEUE_KEY);
+    } catch (Exception e) {
+      var message = "Failed to clear frontier queue";
+
+      logger.error(message, e);
+      throw new RedisException(message, e);
+    }
+  }
 }

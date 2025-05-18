@@ -90,6 +90,7 @@ public class LinksExtractorWorker implements LinkExtractors, Runnable {
                 "Thread {} - Failed to extract links from {}", worker.getName(), page.link());
           }
         } else {
+          // To avoid CPU spinning when queue is empty
           Thread.sleep(100);
         }
       } catch (Exception e) {

@@ -23,6 +23,7 @@ public class WorkersManager {
   private final FetchedPagesQueue fetchedPagesQueue;
   private final VisitedUrlsSet visitedUrlsSet;
   private final URLPredicate urlPredicate;
+  private final RobotsChecker robotsChecker;
   private final int maxDepth;
   private final int numberOfPageFetcherWorkers;
   private final int numberOfLinksExtractorWorker;
@@ -33,6 +34,7 @@ public class WorkersManager {
       VisitedUrlsSet visitedUrlsSet,
       ExecutorService executorService,
       URLPredicate urlPredicate,
+      RobotsChecker robotsChecker,
       int maxDepth,
       int numberOfPageFetcherWorkers,
       int numberOfLinksExtractorWorker) {
@@ -41,6 +43,7 @@ public class WorkersManager {
     this.fetchedPagesQueue = fetchedPagesQueue;
     this.visitedUrlsSet = visitedUrlsSet;
     this.urlPredicate = urlPredicate;
+    this.robotsChecker = robotsChecker;
     this.maxDepth = maxDepth;
     this.numberOfLinksExtractorWorker = numberOfLinksExtractorWorker;
     this.numberOfPageFetcherWorkers = numberOfPageFetcherWorkers;
@@ -49,14 +52,13 @@ public class WorkersManager {
   public void start() {
     for (int i = 0; i < numberOfPageFetcherWorkers; i++) {
       PageFetcherWorker worker =
-          new PageFetcherWorker(frontierQueue, fetchedPagesQueue, visitedUrlsSet);
+          new PageFetcherWorker(frontierQueue, fetchedPagesQueue, visitedUrlsSet, robotsChecker);
       pageFetcherWorkers.add(worker);
       executorService.execute(worker);
     }
 
     logger.info("Started {} Page Fetcher workers", numberOfPageFetcherWorkers);
 
-    // Create and execute links extractor workers
     for (int i = 0; i < numberOfLinksExtractorWorker; i++) {
       LinksExtractorWorker worker =
           new LinksExtractorWorker(frontierQueue, fetchedPagesQueue, urlPredicate, maxDepth);

@@ -6,4 +6,6 @@ public interface Queue<T> {
   Optional<T> pop();
 
   void push(T t);
+
+  void clear();
 }

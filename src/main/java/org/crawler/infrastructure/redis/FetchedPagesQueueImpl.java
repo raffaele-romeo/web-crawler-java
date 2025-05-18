@@ -49,4 +49,15 @@ public class FetchedPagesQueueImpl implements FetchedPagesQueue {
       throw new RedisException(message, e);
     }
   }
+
+  public void clear() {
+    try (Jedis jedis = jedisPool.getResource()) {
+      jedis.del(PARSING_QUEUE_KEY);
+    } catch (Exception e) {
+      var message = "Failed to clear parsing queue";
+
+      logger.error(message, e);
+      throw new RedisException(message, e);
+    }
+  }
 }

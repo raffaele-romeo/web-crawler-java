@@ -9,6 +9,7 @@ import org.crawler.domain.exception.ConnectionException;
 import org.crawler.infrastructure.FetchedPagesQueue;
 import org.crawler.infrastructure.FrontierQueue;
 import org.crawler.infrastructure.VisitedUrlsSet;
+import org.crawler.service.RobotsChecker;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,16 +21,20 @@ public class PageFetcherWorker implements PageFetcher, Runnable {
   private final FetchedPagesQueue fetchedPagesQueue;
   private final VisitedUrlsSet visitedUrlsSet;
 
+  private final RobotsChecker robotsChecker;
+
   private final AtomicBoolean running = new AtomicBoolean(false);
   private Thread worker;
 
   public PageFetcherWorker(
       FrontierQueue frontierQueue,
       FetchedPagesQueue fetchedPagesQueue,
-      VisitedUrlsSet visitedUrlsSet) {
+      VisitedUrlsSet visitedUrlsSet,
+      RobotsChecker robotsChecker) {
     this.frontierQueue = frontierQueue;
     this.fetchedPagesQueue = fetchedPagesQueue;
     this.visitedUrlsSet = visitedUrlsSet;
+    this.robotsChecker = robotsChecker;
   }
 
   @Override
@@ -66,7 +71,7 @@ public class PageFetcherWorker implements PageFetcher, Runnable {
           try {
             boolean wasAdded = visitedUrlsSet.addIfNotPresent(link.url());
 
-            if (wasAdded) {
+            if (wasAdded && robotsChecker.isUrlAllowed(link.url())) {
               logger.debug("Thread {} - Processing link {}", worker.getName(), link);
 
               Page page = fetchPage(link);
@@ -76,6 +81,7 @@ public class PageFetcherWorker implements PageFetcher, Runnable {
             logger.error("Thread {} - Failed to fetch page from {}", worker.getName(), link, e);
           }
         } else {
+          // To avoid CPU spinning when queue is empty
           Thread.sleep(100);
         }
       } catch (Exception e) {
