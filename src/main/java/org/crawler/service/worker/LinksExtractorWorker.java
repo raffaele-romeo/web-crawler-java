@@ -60,7 +60,6 @@ public class LinksExtractorWorker implements LinkExtractors, Runnable {
                 .filter(url -> !url.startsWith("javascript:"))
                 .filter(url -> !url.startsWith("mailto:"))
                 .filter(url -> !url.contains("#"))
-                .filter(url -> !isBinaryResource(url))
                 .filter(urlPredicate::isValid)
                 .filter(url -> !visitedUrlsSet.isPresent(url))
                 .map(url -> new Link(sanitizeUrl(url), page.link().depth() + 1))
@@ -115,10 +114,6 @@ public class LinksExtractorWorker implements LinkExtractors, Runnable {
     } catch (Exception e) {
       logger.error("Failed to extract links from {}", page.link());
     }
-  }
-
-  private static boolean isBinaryResource(String url) {
-    return url.matches(".*\\.(pdf|zip|rar|tar|gz|exe|docx?|xlsx?|pptx?)$");
   }
 
   private static String sanitizeUrl(String url) {

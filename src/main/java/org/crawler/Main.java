@@ -1,5 +1,6 @@
 package org.crawler;
 
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -18,14 +19,15 @@ import org.crawler.service.WorkersManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 public class Main {
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
   public static void main(String[] args) {
     var numberOfCores = numberOfCores();
-    var numberOfPageFetcherWorkers = Math.ceilDiv(numberOfCores, 2);
-    var numberOfLinksExtractorWorker = Math.ceilDiv(numberOfCores, 2);
+    var numberOfPageFetcherWorkers = numberOfCores * 5;
+    var numberOfLinksExtractorWorker = numberOfCores * 5;
 
     ExecutorService executorService = null;
     JedisPool jedisPool = null;
@@ -33,17 +35,23 @@ public class Main {
 
     try {
       executorService = Executors.newVirtualThreadPerTaskExecutor();
-      jedisPool = new JedisPool();
+      JedisPoolConfig config = new JedisPoolConfig();
+      config.setMaxTotal(200);
+      config.setMaxIdle(50);
+      config.setMinIdle(10);
+      config.setBlockWhenExhausted(true);
+      config.setMaxWait(Duration.ofSeconds(5));
+      jedisPool = new JedisPool(config);
 
       ConfigLoader configLoader = new ConfigLoaderImpl();
-      AppConfig config = configLoader.load("config.properties");
+      AppConfig appConfig = configLoader.load("config.properties");
       workersManager =
           makeWorkersManager(
               executorService,
               jedisPool,
               numberOfPageFetcherWorkers,
               numberOfLinksExtractorWorker,
-              config);
+                  appConfig);
 
       registerShutdownHook(workersManager, executorService, jedisPool);
       workersManager.start();
