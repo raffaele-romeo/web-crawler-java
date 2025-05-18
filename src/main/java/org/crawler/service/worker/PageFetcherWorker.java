@@ -1,4 +1,4 @@
-package org.crawler.service;
+package org.crawler.service.worker;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -75,6 +75,8 @@ public class PageFetcherWorker implements PageFetcher, Runnable {
           } catch (Exception e) {
             logger.error("Thread {} - Failed to fetch page from {}", worker.getName(), link, e);
           }
+        } else {
+          Thread.sleep(100);
         }
       } catch (Exception e) {
         if (isRunning()) {

@@ -1,4 +1,4 @@
-package org.crawler.service;
+package org.crawler.service.worker;
 
 import java.util.Set;
 import org.crawler.domain.Link;

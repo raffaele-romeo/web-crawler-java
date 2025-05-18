@@ -1,8 +1,9 @@
-package org.crawler.infrastructure;
+package org.crawler.infrastructure.redis;
 
 import java.util.Optional;
 import org.crawler.domain.Link;
 import org.crawler.domain.exception.RedisException;
+import org.crawler.infrastructure.FrontierQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;

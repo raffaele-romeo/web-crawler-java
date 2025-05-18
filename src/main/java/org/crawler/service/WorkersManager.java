@@ -3,10 +3,12 @@ package org.crawler.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import org.crawler.domain.URLPredicate;
+import org.crawler.common.URLPredicate;
 import org.crawler.infrastructure.FetchedPagesQueue;
 import org.crawler.infrastructure.FrontierQueue;
 import org.crawler.infrastructure.VisitedUrlsSet;
+import org.crawler.service.worker.LinksExtractorWorker;
+import org.crawler.service.worker.PageFetcherWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
