@@ -8,4 +8,8 @@ public class ParserException extends WebCrawlerException {
   public ParserException(String message) {
     super(message);
   }
+
+  public ParserException(Throwable cause) {
+    super(cause);
+  }
 }

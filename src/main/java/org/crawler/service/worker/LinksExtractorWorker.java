@@ -1,11 +1,11 @@
-package org.crawler.service;
+package org.crawler.service.worker;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.crawler.common.URLPredicate;
 import org.crawler.domain.Link;
 import org.crawler.domain.Page;
-import org.crawler.domain.URLPredicate;
 import org.crawler.domain.exception.ParserException;
 import org.crawler.infrastructure.FetchedPagesQueue;
 import org.crawler.infrastructure.FrontierQueue;
@@ -89,6 +89,8 @@ public class LinksExtractorWorker implements LinkExtractors, Runnable {
             logger.error(
                 "Thread {} - Failed to extract links from {}", worker.getName(), page.link());
           }
+        } else {
+          Thread.sleep(100);
         }
       } catch (Exception e) {
         if (isRunning()) {

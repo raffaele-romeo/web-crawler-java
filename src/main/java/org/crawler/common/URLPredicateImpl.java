@@ -1,4 +1,4 @@
-package org.crawler.domain;
+package org.crawler.common;
 
 import java.net.URI;
 import java.net.URISyntaxException;

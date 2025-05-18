@@ -1,4 +1,4 @@
-package org.crawler.domain;
+package org.crawler.common;
 
 @FunctionalInterface
 public interface URLPredicate {

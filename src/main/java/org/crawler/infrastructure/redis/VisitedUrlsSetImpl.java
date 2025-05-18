@@ -1,6 +1,7 @@
-package org.crawler.infrastructure;
+package org.crawler.infrastructure.redis;
 
 import org.crawler.domain.exception.RedisException;
+import org.crawler.infrastructure.VisitedUrlsSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;

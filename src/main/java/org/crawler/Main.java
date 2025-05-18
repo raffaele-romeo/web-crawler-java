@@ -3,10 +3,15 @@ package org.crawler;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.crawler.domain.Link;
-import org.crawler.domain.URLPredicate;
-import org.crawler.domain.URLPredicateImpl;
+import org.crawler.common.URLPredicate;
+import org.crawler.common.URLPredicateImpl;
+import org.crawler.config.ConfigLoader;
+import org.crawler.config.ConfigLoaderImpl;
+import org.crawler.domain.config.AppConfig;
 import org.crawler.infrastructure.*;
+import org.crawler.infrastructure.redis.FetchedPagesQueueImpl;
+import org.crawler.infrastructure.redis.FrontierQueueImpl;
+import org.crawler.infrastructure.redis.VisitedUrlsSetImpl;
 import org.crawler.service.WorkersManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,11 +19,6 @@ import redis.clients.jedis.JedisPool;
 
 public class Main {
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
-
-  private static final int REDIS_TIMEOUT = 1;
-  private static final int MAX_DEPTH = 10;
-
-  private static final Link seedLink = new Link("https://example.com", 0);
 
   public static void main(String[] args) {
     var numberOfCores = numberOfCores();
@@ -32,9 +32,15 @@ public class Main {
       executorService = Executors.newVirtualThreadPerTaskExecutor();
       jedisPool = new JedisPool();
 
+      ConfigLoader configLoader = new ConfigLoaderImpl();
+      AppConfig config = configLoader.load("config.properties");
       WorkersManager workersManager =
           makeWorkersManager(
-              executorService, jedisPool, numberOfPageFetcherWorkers, numberOfLinksExtractorWorker);
+              executorService,
+              jedisPool,
+              numberOfPageFetcherWorkers,
+              numberOfLinksExtractorWorker,
+              config);
 
       registerShutdownHook(workersManager, executorService, jedisPool);
       workersManager.start();
@@ -70,9 +76,11 @@ public class Main {
       ExecutorService executorService,
       JedisPool jedisPool,
       int numberOfPageFetcherWorkers,
-      int numberOfLinksExtractorWorker) {
-    FrontierQueue frontierQueue = new FrontierQueueImpl(jedisPool, REDIS_TIMEOUT);
-    FetchedPagesQueue fetchedPagesQueue = new FetchedPagesQueueImpl(jedisPool, REDIS_TIMEOUT);
+      int numberOfLinksExtractorWorker,
+      AppConfig config) {
+    FrontierQueue frontierQueue = new FrontierQueueImpl(jedisPool, config.redis().timeout());
+    FetchedPagesQueue fetchedPagesQueue =
+        new FetchedPagesQueueImpl(jedisPool, config.redis().timeout());
     VisitedUrlsSet visitedUrlsSet = new VisitedUrlsSetImpl(jedisPool);
 
     URLPredicate urlPredicate = new URLPredicateImpl();
@@ -84,12 +92,12 @@ public class Main {
             visitedUrlsSet,
             executorService,
             urlPredicate,
-            MAX_DEPTH,
+            config.maxDepth(),
             numberOfPageFetcherWorkers,
             numberOfLinksExtractorWorker);
 
     visitedUrlsSet.clear();
-    frontierQueue.push(seedLink);
+    frontierQueue.push(config.seedLink());
 
     return workersManger;
   }
