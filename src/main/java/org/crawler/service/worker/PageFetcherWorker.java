@@ -43,7 +43,7 @@ public class PageFetcherWorker implements PageFetcher, Runnable {
     String html;
 
     try {
-      html = Jsoup.connect(link.url()).get().html();
+      html = Jsoup.connect(link.uri().toString()).get().html();
 
     } catch (Exception e) {
       logger.error("Error while fetching page: {}", link, e);
@@ -82,9 +82,9 @@ public class PageFetcherWorker implements PageFetcher, Runnable {
 
   protected void process(Link link) {
     try {
-      boolean wasAdded = visitedUrlsSet.addIfNotPresent(link.url());
+      boolean wasAdded = visitedUrlsSet.addIfNotPresent(link.uri().toString());
 
-      if (wasAdded && robotsChecker.isUrlAllowed(link.url())) {
+      if (wasAdded && robotsChecker.isUrlAllowed(link.uri())) {
         logger.debug("Processing link {}", link);
 
         Page page = fetchPage(link);

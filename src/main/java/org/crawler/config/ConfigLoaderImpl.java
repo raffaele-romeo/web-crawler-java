@@ -2,7 +2,9 @@ package org.crawler.config;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.Properties;
+import java.util.function.Function;
 import org.crawler.domain.Link;
 import org.crawler.domain.config.AppConfig;
 import org.crawler.domain.config.RedisConfig;
@@ -26,23 +28,13 @@ public class ConfigLoaderImpl implements ConfigLoader {
 
   private AppConfig loadAppConfig(Properties props) throws ConfigurationException {
     try {
-      String seedLinkStr = props.getProperty("app.seedLink");
-      if (seedLinkStr == null) {
-        throw new ConfigurationException("Missing app.seedLink property");
-      }
-      Link seedLink = new Link(seedLinkStr, 0);
+      var propertyReader = makePropertyReader(props);
 
-      String maxDepthStr = props.getProperty("app.maxDepth");
-      if (maxDepthStr == null) {
-        throw new ConfigurationException("Missing app.maxDepth property");
-      }
-      int maxDepth = Integer.parseInt(maxDepthStr);
+      Link seedLink = new Link(URI.create(propertyReader.apply("app.seedLink")), 0);
 
-      String redisTimeoutStr = props.getProperty("redis.timeout");
-      if (redisTimeoutStr == null) {
-        throw new ConfigurationException("Missing redis.timeout property");
-      }
-      int redisTimeout = Integer.parseInt(redisTimeoutStr);
+      int maxDepth = Integer.parseInt(propertyReader.apply("app.maxDepth"));
+
+      int redisTimeout = Integer.parseInt(propertyReader.apply("redis.timeout"));
 
       RedisConfig redisConfig = new RedisConfig(redisTimeout);
 
@@ -50,5 +42,16 @@ public class ConfigLoaderImpl implements ConfigLoader {
     } catch (Exception e) {
       throw new ConfigurationException("Error parsing configuration: " + e.getMessage(), e);
     }
+  }
+
+  private Function<String, String> makePropertyReader(Properties props) {
+    return name -> {
+      String value = props.getProperty(name);
+      if (value == null) {
+        throw new ConfigurationException(String.format("Missing %s property", name));
+      }
+
+      return value;
+    };
   }
 }

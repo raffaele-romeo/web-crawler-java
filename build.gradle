@@ -37,7 +37,7 @@ dependencies {
 }
 
 application {
-    mainClass = 'org.crawler.Main'
+    mainClass = 'org.crawler.WebCrawlerApp'
 }
 
 jar {

@@ -1,8 +1,9 @@
 package org.crawler.domain;
 
 import com.google.gson.Gson;
+import java.net.URI;
 
-public record Link(String url, int depth) {
+public record Link(URI uri, int depth) {
   private static final Gson gson = new Gson();
 
   public String toJson() {

@@ -1,5 +1,7 @@
 package org.crawler.service;
 
+import java.net.URI;
+
 public interface RobotsChecker {
-  boolean isUrlAllowed(String url);
+  boolean isUrlAllowed(URI uri);
 }

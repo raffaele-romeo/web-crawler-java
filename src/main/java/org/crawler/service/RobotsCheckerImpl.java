@@ -19,17 +19,17 @@ public class RobotsCheckerImpl implements RobotsChecker {
   private static final String USER_AGENT = "MyCrawler";
 
   @Override
-  public boolean isUrlAllowed(String urlStr) {
+  public boolean isUrlAllowed(URI uri) {
     InputStream inputStream = null;
     ByteArrayOutputStream baos = null;
 
     try {
-      URL url = new URI(urlStr).toURL();
+      URL url = uri.toURL();
       String host = url.getProtocol() + "://" + url.getHost();
       String robotsTxtUrl = host + "/robots.txt";
 
       HttpURLConnection connection =
-          (HttpURLConnection) new URI(robotsTxtUrl).toURL().openConnection();
+          (HttpURLConnection) URI.create(robotsTxtUrl).toURL().openConnection();
       connection.setRequestProperty("User-Agent", USER_AGENT);
 
       inputStream = connection.getInputStream();
@@ -41,7 +41,7 @@ public class RobotsCheckerImpl implements RobotsChecker {
       BaseRobotRules rules =
           parser.parseContent(robotsTxtUrl, content, "text/plain", Set.of(USER_AGENT));
 
-      return rules.isAllowed(urlStr);
+      return rules.isAllowed(url.toString());
     } catch (Exception e) {
       return true;
     } finally {

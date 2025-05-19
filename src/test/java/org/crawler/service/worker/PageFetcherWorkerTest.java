@@ -7,6 +7,7 @@ import java.io.IOException;
 import org.crawler.domain.Link;
 import org.crawler.domain.Page;
 import org.crawler.domain.exception.ConnectionException;
+import org.crawler.fixture.LinkFixture;
 import org.crawler.infrastructure.FetchedPagesQueue;
 import org.crawler.infrastructure.FrontierQueue;
 import org.crawler.infrastructure.VisitedUrlsSet;
@@ -39,26 +40,26 @@ class PageFetcherWorkerTest {
   @Test
   void fetchPage_shouldReturnPage_whenHtmlFetchedSuccessfully() {
     // Given
-    String url = "https://example.com";
-    Link link = new Link(url, 0);
+    Link link = LinkFixture.sampleLink();
 
     // When
     Page page = pageFetcherWorker.fetchPage(link);
 
     // Then
     assertNotNull(page);
-    assertEquals(url, page.link().url());
+    assertEquals(link.uri(), page.link().uri());
     assertTrue(page.html().contains("html"));
   }
 
   @Test
   void fetchPage_shouldThrowConnectionException_whenJsoupFails() {
     // Given
-    String url = "https://invalid.example.com";
-    Link link = new Link(url, 0);
+    Link link = LinkFixture.sampleLink();
 
     try (var jsoupMocked = mockStatic(Jsoup.class)) {
-      jsoupMocked.when(() -> Jsoup.connect(url)).thenThrow(new RuntimeException("Timeout"));
+      jsoupMocked
+          .when(() -> Jsoup.connect(link.uri().toString()))
+          .thenThrow(new RuntimeException("Timeout"));
 
       // Then
       assertThrows(ConnectionException.class, () -> pageFetcherWorker.fetchPage(link));
@@ -68,18 +69,17 @@ class PageFetcherWorkerTest {
   @Test
   void process_shouldPushToFetchedQueue_whenLinkNotVisitedAndAllowed() throws IOException {
     // Given
-    String url = "https://example.com";
-    Link link = new Link(url, 0);
+    Link link = LinkFixture.sampleLink();
     String html = "<html>test</html>";
 
     Connection mockConnection = mock(Connection.class);
     Document mockDocument = mock(Document.class);
 
-    when(visitedUrlsSet.addIfNotPresent(url)).thenReturn(true);
-    when(robotsChecker.isUrlAllowed(url)).thenReturn(true);
+    when(visitedUrlsSet.addIfNotPresent(link.uri().toString())).thenReturn(true);
+    when(robotsChecker.isUrlAllowed(link.uri())).thenReturn(true);
 
     try (var jsoupMocked = mockStatic(Jsoup.class)) {
-      jsoupMocked.when(() -> Jsoup.connect(url)).thenReturn(mockConnection);
+      jsoupMocked.when(() -> Jsoup.connect(link.uri().toString())).thenReturn(mockConnection);
       when(mockConnection.get()).thenReturn(mockDocument);
       when(mockDocument.html()).thenReturn(html);
 
@@ -94,8 +94,8 @@ class PageFetcherWorkerTest {
   @Test
   void process_shouldDoNothing_whenAlreadyVisited() {
     // Given
-    Link link = new Link("https://example.com", 0);
-    when(visitedUrlsSet.addIfNotPresent(link.url())).thenReturn(false);
+    Link link = LinkFixture.sampleLink();
+    when(visitedUrlsSet.addIfNotPresent(link.uri().toString())).thenReturn(false);
 
     // When
     pageFetcherWorker.process(link);
@@ -107,10 +107,9 @@ class PageFetcherWorkerTest {
   @Test
   void process_shouldDoNothing_whenDisallowedByRobots() {
     // Given
-    String url = "https://example.com";
-    Link link = new Link(url, 0);
-    when(visitedUrlsSet.addIfNotPresent(url)).thenReturn(true);
-    when(robotsChecker.isUrlAllowed(url)).thenReturn(false);
+    Link link = LinkFixture.sampleLink();
+    when(visitedUrlsSet.addIfNotPresent(link.uri().toString())).thenReturn(true);
+    when(robotsChecker.isUrlAllowed(link.uri())).thenReturn(false);
 
     // When
     pageFetcherWorker.process(link);

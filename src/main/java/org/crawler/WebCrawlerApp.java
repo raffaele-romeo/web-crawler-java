@@ -4,8 +4,7 @@ import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.crawler.common.URLPredicate;
-import org.crawler.common.URLPredicateImpl;
+import org.crawler.common.URLPredicates;
 import org.crawler.config.ConfigLoader;
 import org.crawler.config.ConfigLoaderImpl;
 import org.crawler.domain.config.AppConfig;
@@ -21,8 +20,8 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
-public class Main {
-  private static final Logger logger = LoggerFactory.getLogger(Main.class);
+public class WebCrawlerApp {
+  private static final Logger logger = LoggerFactory.getLogger(WebCrawlerApp.class);
 
   public static void main(String[] args) {
     var numberOfCores = numberOfCores();
@@ -36,7 +35,7 @@ public class Main {
     try {
       executorService = Executors.newVirtualThreadPerTaskExecutor();
       JedisPoolConfig config = new JedisPoolConfig();
-      config.setMaxTotal(200);
+      config.setMaxTotal(100);
       config.setMaxIdle(50);
       config.setMinIdle(10);
       config.setBlockWhenExhausted(true);
@@ -51,7 +50,7 @@ public class Main {
               jedisPool,
               numberOfPageFetcherWorkers,
               numberOfLinksExtractorWorker,
-                  appConfig);
+              appConfig);
 
       registerShutdownHook(workersManager, executorService, jedisPool);
       workersManager.start();
@@ -87,15 +86,13 @@ public class Main {
     VisitedUrlsSet visitedUrlsSet = new VisitedUrlsSetImpl(jedisPool);
     RobotsChecker robotsChecker = new RobotsCheckerImpl();
 
-    URLPredicate urlPredicate = new URLPredicateImpl();
-
     var workersManger =
         new WorkersManager(
             frontierQueue,
             fetchedPagesQueue,
             visitedUrlsSet,
             executorService,
-            urlPredicate,
+            URLPredicates.defaultValidator(),
             robotsChecker,
             config.maxDepth(),
             numberOfPageFetcherWorkers,

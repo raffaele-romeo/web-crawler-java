@@ -1,6 +1,7 @@
 package org.crawler.service.worker;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -48,21 +49,19 @@ public class LinksExtractorWorker implements LinkExtractors, Runnable {
       if (page.link().depth() >= maxDepth) {
         links = Set.of();
       } else {
-        String baseUrl = page.link().url().toLowerCase().trim();
+        String baseUrl = page.link().uri().toString().toLowerCase().trim();
 
         links =
             Jsoup.parse(page.html(), baseUrl).select("a[href]").stream()
                 .map(elem -> elem.attr("abs:href"))
                 .map(String::trim)
                 .map(String::toLowerCase)
-                .filter(url -> !url.isBlank())
                 .filter(url -> !url.equals(baseUrl))
-                .filter(url -> !url.startsWith("javascript:"))
-                .filter(url -> !url.startsWith("mailto:"))
-                .filter(url -> !url.contains("#"))
                 .filter(urlPredicate::isValid)
                 .filter(url -> !visitedUrlsSet.isPresent(url))
-                .map(url -> new Link(sanitizeUrl(url), page.link().depth() + 1))
+                .map(LinksExtractorWorker::sanitizeUrl)
+                .flatMap(Optional::stream)
+                .map(uri -> new Link(uri, page.link().depth() + 1))
                 .collect(Collectors.toSet());
       }
     } catch (Exception e) {
@@ -116,13 +115,12 @@ public class LinksExtractorWorker implements LinkExtractors, Runnable {
     }
   }
 
-  private static String sanitizeUrl(String url) {
+  private static Optional<URI> sanitizeUrl(String url) {
     try {
-      URI uri = new URI(url);
-      URI sanitized = new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), null, null);
-      return sanitized.toString().replaceAll("/$", ""); // remove trailing slash
+      var uri = URI.create(url);
+      return Optional.of(new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), null, null));
     } catch (Exception e) {
-      return url;
+      return Optional.empty();
     }
   }
 
