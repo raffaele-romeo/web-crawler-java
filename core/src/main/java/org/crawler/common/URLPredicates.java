@@ -6,6 +6,11 @@ public class URLPredicates {
         !url.isBlank()
             && !url.startsWith("javascript:")
             && !url.startsWith("mailto:")
-            && !url.contains("#");
+            && !url.contains("#")
+            && !isBinaryResource(url);
+  }
+
+  private static boolean isBinaryResource(String url) {
+    return url.matches(".*\\.(pdf|zip|rar|tar|gz|exe|docx?|xlsx?|pptx?|txt)$");
   }
 }

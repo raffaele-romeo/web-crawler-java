@@ -9,15 +9,15 @@ import org.crawler.domain.Link;
 import org.crawler.domain.config.AppConfig;
 import org.crawler.domain.config.RedisConfig;
 import org.crawler.domain.exception.ConfigurationException;
+import redis.clients.jedis.JedisPoolConfig;
 
 public class ConfigLoaderImpl implements ConfigLoader {
   @Override
   public AppConfig load(String propertiesFilePath) {
     Properties props = new Properties();
 
-    try {
-      InputStream input =
-          ConfigLoaderImpl.class.getClassLoader().getResourceAsStream(propertiesFilePath);
+    try (InputStream input =
+        ConfigLoaderImpl.class.getClassLoader().getResourceAsStream(propertiesFilePath)) {
       props.load(input);
     } catch (IOException e) {
       throw new ConfigurationException(e);
@@ -31,14 +31,33 @@ public class ConfigLoaderImpl implements ConfigLoader {
       var propertyReader = makePropertyReader(props);
 
       Link seedLink = new Link(URI.create(propertyReader.apply("app.seedLink")), 0);
-
       int maxDepth = Integer.parseInt(propertyReader.apply("app.maxDepth"));
+      int numberOfLinksExtractorWorker =
+          Integer.parseInt(propertyReader.apply("app.numberOfLinksExtractorWorker"));
+      int numberOfPageFetcherWorkers =
+          Integer.parseInt(propertyReader.apply("app.numberOfPageFetcherWorkers"));
 
       int redisTimeout = Integer.parseInt(propertyReader.apply("redis.timeout"));
+      String redisHost = propertyReader.apply("redis.host");
+      int redisPort = Integer.parseInt(propertyReader.apply("redis.port"));
+      int jedisMaxTotal = Integer.parseInt(propertyReader.apply("redis.jedis.maxTotal"));
+      int jedisMaxIdle = Integer.parseInt(propertyReader.apply("redis.jedis.maxIdle"));
+      int jedisMinIdle = Integer.parseInt(propertyReader.apply("redis.jedis.minIdle"));
 
-      RedisConfig redisConfig = new RedisConfig(redisTimeout);
+      JedisPoolConfig config = new JedisPoolConfig();
+      config.setMaxTotal(jedisMaxTotal);
+      config.setMaxIdle(jedisMaxIdle);
+      config.setMinIdle(jedisMinIdle);
+      config.setBlockWhenExhausted(true);
 
-      return new AppConfig(seedLink, maxDepth, redisConfig);
+      RedisConfig redisConfig = new RedisConfig(redisTimeout, redisHost, redisPort, config);
+
+      return new AppConfig(
+          seedLink,
+          maxDepth,
+          numberOfPageFetcherWorkers,
+          numberOfLinksExtractorWorker,
+          redisConfig);
     } catch (Exception e) {
       throw new ConfigurationException("Error parsing configuration: " + e.getMessage(), e);
     }

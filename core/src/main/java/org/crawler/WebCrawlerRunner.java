@@ -1,12 +1,9 @@
 package org.crawler;
 
-import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.crawler.common.URLPredicates;
-import org.crawler.config.ConfigLoader;
-import org.crawler.config.ConfigLoaderImpl;
 import org.crawler.domain.config.AppConfig;
 import org.crawler.infrastructure.*;
 import org.crawler.infrastructure.redis.FetchedPagesQueueImpl;
@@ -18,68 +15,33 @@ import org.crawler.service.WorkersManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 
-public class WebCrawlerApp {
-  private static final Logger logger = LoggerFactory.getLogger(WebCrawlerApp.class);
+public class WebCrawlerRunner {
+  private static final Logger logger = LoggerFactory.getLogger(WebCrawlerRunner.class);
 
-  public static void main(String[] args) {
-    var numberOfCores = numberOfCores();
-    var numberOfPageFetcherWorkers = numberOfCores * 5;
-    var numberOfLinksExtractorWorker = numberOfCores * 5;
+  public void run(AppConfig appConfig) {
+    var redisConfig = appConfig.redis();
 
-    ExecutorService executorService = null;
-    JedisPool jedisPool = null;
-    WorkersManager workersManager = null;
+    try (var executorService = Executors.newVirtualThreadPerTaskExecutor();
+        var jedisPool =
+            new JedisPool(redisConfig.jedisPoolConfig(), redisConfig.host(), redisConfig.port())) {
 
-    try {
-      executorService = Executors.newVirtualThreadPerTaskExecutor();
-      JedisPoolConfig config = new JedisPoolConfig();
-      config.setMaxTotal(100);
-      config.setMaxIdle(50);
-      config.setMinIdle(10);
-      config.setBlockWhenExhausted(true);
-      config.setMaxWait(Duration.ofSeconds(5));
-      jedisPool = new JedisPool(config);
-
-      ConfigLoader configLoader = new ConfigLoaderImpl();
-      AppConfig appConfig = configLoader.load("config.properties");
-      workersManager =
-          makeWorkersManager(
-              executorService,
-              jedisPool,
-              numberOfPageFetcherWorkers,
-              numberOfLinksExtractorWorker,
-              appConfig);
+      WorkersManager workersManager = setupWorkers(executorService, jedisPool, appConfig);
 
       registerShutdownHook(workersManager, executorService, jedisPool);
       workersManager.start();
 
-      var vt =
-          Thread.startVirtualThread(
-              () -> {
-                try {
-                  Thread.sleep(Integer.MAX_VALUE);
-                } catch (InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                  logger.error("Thread was interrupted");
-                }
-              });
-
-      vt.join();
+      Thread.currentThread().join();
     } catch (Exception e) {
       logger.error("Fatal error during startup: {}", e.getMessage(), e);
-    } finally {
-      shutdown(workersManager, executorService, jedisPool);
     }
   }
 
-  private static WorkersManager makeWorkersManager(
-      ExecutorService executorService,
-      JedisPool jedisPool,
-      int numberOfPageFetcherWorkers,
-      int numberOfLinksExtractorWorker,
-      AppConfig config) {
+  private static WorkersManager setupWorkers(
+      ExecutorService executorService, JedisPool jedisPool, AppConfig config) {
+    var numberOfPageFetcherWorkers = config.numberOfPageFetcherWorkers();
+    var numberOfLinksExtractorWorker = config.numberOfLinksExtractorWorker();
+
     FrontierQueue frontierQueue = new FrontierQueueImpl(jedisPool, config.redis().timeout());
     FetchedPagesQueue fetchedPagesQueue =
         new FetchedPagesQueueImpl(jedisPool, config.redis().timeout());
@@ -105,10 +67,6 @@ public class WebCrawlerApp {
     frontierQueue.push(config.seedLink());
 
     return workersManger;
-  }
-
-  private static int numberOfCores() {
-    return Runtime.getRuntime().availableProcessors();
   }
 
   private static void registerShutdownHook(
