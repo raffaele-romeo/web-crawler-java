@@ -98,7 +98,7 @@ public class PageFetcherWorker implements PageFetcher, Runnable {
   public void interrupt() {
     running.set(false);
 
-    // break thread pool out of frontierQueue.pop() call.
+    // break thread out of frontierQueue.pop() call
     worker.interrupt();
   }
 

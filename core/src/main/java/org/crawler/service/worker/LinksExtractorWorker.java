@@ -131,7 +131,7 @@ public class LinksExtractorWorker implements LinkExtractors, Runnable {
   public void interrupt() {
     running.set(false);
 
-    // break thread pool out of fetchedPagesQueue.pop() call.
+    // break thread out of fetchedPagesQueue.pop() call
     worker.interrupt();
   }
 

@@ -10,10 +10,12 @@ java {
 dependencies {
     implementation project(':core')
 
+    testImplementation 'redis.clients:jedis:6.0.0'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.18'
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.mockito:mockito-core:5.17.0'
-    testImplementation 'org.mockito:mockito-junit-jupiter:5.17.0'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.0'
+    testImplementation 'com.github.tomakehurst:wiremock-jre8:3.0.1'
 }
 
 sourceSets {
@@ -25,4 +27,9 @@ sourceSets {
 
 test {
     useJUnitPlatform()
+    testLogging {
+        events "passed", "failed", "skipped", "standardOut", "standardError"
+        exceptionFormat "full"
+        showStandardStreams = true
+    }
 }

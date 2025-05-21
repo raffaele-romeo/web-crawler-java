@@ -19,5 +19,5 @@ allprojects {
 }
 
 tasks.register('allTests') {
-    dependsOn ':core:test', ':integration-test:test'
+    dependsOn ':core:test', ':integration:test'
 }
