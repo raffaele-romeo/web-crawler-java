@@ -2,7 +2,6 @@ package org.crawler;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.crawler.common.URLPredicates;
 import org.crawler.domain.config.AppConfig;
 import org.crawler.infrastructure.*;
@@ -89,30 +88,11 @@ public class WebCrawlerRunner {
     }
 
     if (executorService != null) {
-      executorService.shutdown();
-
-      try {
-        // Wait a while for existing tasks to terminate
-        if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
-          executorService.shutdownNow(); // Cancel currently executing tasks
-          // Wait a while for tasks to respond to being cancelled
-          if (!executorService.awaitTermination(1, TimeUnit.SECONDS))
-            logger.error("Pool did not terminate");
-        }
-      } catch (InterruptedException ex) {
-        // (Re-)Cancel if current thread also interrupted
-        executorService.shutdownNow();
-        // Preserve interrupt status
-        Thread.currentThread().interrupt();
-      }
+      executorService.close();
     }
 
     if (jedisPool != null) {
-      try {
         jedisPool.close();
-      } catch (Exception e) {
-        logger.error("Failed to close JedisPool: {}", e.getMessage(), e);
-      }
     }
   }
 }
