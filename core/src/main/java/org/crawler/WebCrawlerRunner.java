@@ -92,7 +92,7 @@ public class WebCrawlerRunner {
     }
 
     if (jedisPool != null) {
-        jedisPool.close();
+      jedisPool.close();
     }
   }
 }

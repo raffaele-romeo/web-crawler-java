@@ -3,7 +3,6 @@ package org.crawler.service.worker;
 import java.net.URI;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.crawler.common.URLPredicate;
 import org.crawler.domain.Link;
@@ -16,7 +15,7 @@ import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LinksExtractorWorker implements LinkExtractors, Runnable {
+public class LinksExtractorWorker extends AbstractStoppableWorker implements LinkExtractors {
   private static final Logger logger = LoggerFactory.getLogger(LinksExtractorWorker.class);
 
   private final FrontierQueue frontierQueue;
@@ -24,9 +23,6 @@ public class LinksExtractorWorker implements LinkExtractors, Runnable {
   private final URLPredicate urlPredicate;
   private final VisitedUrlsSet visitedUrlsSet;
   private final int maxDepth;
-
-  private final AtomicBoolean running = new AtomicBoolean(false);
-  private Thread worker;
 
   public LinksExtractorWorker(
       FrontierQueue frontierQueue,
@@ -73,32 +69,24 @@ public class LinksExtractorWorker implements LinkExtractors, Runnable {
   }
 
   @Override
-  public void run() {
-    running.set(true);
+  protected void doWork() throws Exception {
+    var maybeElem = fetchedPagesQueue.pop();
 
-    worker = Thread.currentThread();
-    Page page;
+    if (maybeElem.isPresent()) {
+      Page page = maybeElem.get();
 
-    while (running.get()) {
-      try {
-        var maybeElem = fetchedPagesQueue.pop();
+      logger.debug("Processing page {}", page.link());
 
-        if (maybeElem.isPresent()) {
-          page = maybeElem.get();
-
-          logger.debug("Processing page {}", page.link());
-
-          process(page);
-        } else {
-          // To avoid CPU spinning when queue is empty
-          Thread.sleep(100);
-        }
-      } catch (Exception e) {
-        if (isRunning()) {
-          logger.error("Error retrieving from queue", e);
-        }
-      }
+      process(page);
+    } else {
+      // To avoid CPU spinning when queue is empty
+      Thread.onSpinWait();
     }
+  }
+
+  @Override
+  protected Logger getLogger() {
+    return logger;
   }
 
   protected void process(Page page) {
@@ -126,16 +114,5 @@ public class LinksExtractorWorker implements LinkExtractors, Runnable {
 
   private static String linksToJson(Set<Link> links) {
     return links.stream().map(Link::toJson).collect(Collectors.joining(",", "[", "]"));
-  }
-
-  public void interrupt() {
-    running.set(false);
-
-    // break thread out of fetchedPagesQueue.pop() call
-    worker.interrupt();
-  }
-
-  boolean isRunning() {
-    return running.get();
   }
 }
