@@ -42,7 +42,6 @@ public class PageFetcherWorker extends AbstractStoppableWorker implements PageFe
       html = Jsoup.connect(link.uri().toString()).get().html();
 
     } catch (Exception e) {
-      logger.error("Error while fetching page: {}", link, e);
       throw new ConnectionException("Failed to connect to URL: " + link, e);
     }
 

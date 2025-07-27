@@ -32,10 +32,8 @@ public class FrontierQueueImpl implements FrontierQueue {
         return Optional.empty();
       }
     } catch (Exception e) {
-      var message = "Failed to get link from queue";
 
-      logger.error(message, e);
-      throw new RedisException(message, e);
+      throw new RedisException("Failed to get link from queue", e);
     }
   }
 
@@ -46,10 +44,7 @@ public class FrontierQueueImpl implements FrontierQueue {
 
       logger.info("Pushed link to Frontier queue, result: {}", result > 0);
     } catch (Exception e) {
-      var message = "Failed to add link to queue";
-
-      logger.error(message, e);
-      throw new RedisException(message, e);
+      throw new RedisException("Failed to add link to queue", e);
     }
   }
 
@@ -58,10 +53,7 @@ public class FrontierQueueImpl implements FrontierQueue {
     try (Jedis jedis = jedisPool.getResource()) {
       jedis.del(FRONTIER_QUEUE_KEY);
     } catch (Exception e) {
-      var message = "Failed to clear frontier queue";
-
-      logger.error(message, e);
-      throw new RedisException(message, e);
+      throw new RedisException("Failed to clear frontier queue", e);
     }
   }
 }

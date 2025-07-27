@@ -61,7 +61,6 @@ public class LinksExtractorWorker extends AbstractStoppableWorker implements Lin
                 .collect(Collectors.toSet());
       }
     } catch (Exception e) {
-      logger.error("Error while parsing page from url {}", page.link(), e);
       throw new ParserException("Failed to extract links from url: " + page.link(), e);
     }
 
@@ -99,7 +98,7 @@ public class LinksExtractorWorker extends AbstractStoppableWorker implements Lin
 
       links.forEach(frontierQueue::push);
     } catch (Exception e) {
-      logger.error("Failed to extract links from {}", page.link());
+      logger.error("Failed to extract links from {}", page.link(), e);
     }
   }
 

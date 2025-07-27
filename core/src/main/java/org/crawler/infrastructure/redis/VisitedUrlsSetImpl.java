@@ -22,10 +22,7 @@ public class VisitedUrlsSetImpl implements VisitedUrlsSet {
     try (Jedis jedis = jedisPool.getResource()) {
       jedis.del(VISITED_URLS_KEY);
     } catch (Exception e) {
-      var message = "Failed to clear visited set";
-
-      logger.error(message, e);
-      throw new RedisException(message, e);
+      throw new RedisException("Failed to clear visited set", e);
     }
   }
 
@@ -37,10 +34,7 @@ public class VisitedUrlsSetImpl implements VisitedUrlsSet {
       logger.info("Added link to visited urls, result: {}", result > 0);
       return result > 0;
     } catch (Exception e) {
-      var message = "Failed to add url to visited set";
-
-      logger.error(message, e);
-      throw new RedisException(message, e);
+      throw new RedisException( "Failed to add url to visited set", e);
     }
   }
 
@@ -50,10 +44,7 @@ public class VisitedUrlsSetImpl implements VisitedUrlsSet {
 
       return jedis.sismember(VISITED_URLS_KEY, url);
     } catch (Exception e) {
-      var message = "Failed to add url to visited set";
-
-      logger.error(message, e);
-      throw new RedisException(message, e);
+      throw new RedisException("Failed to add url to visited set", e);
     }
   }
 }
